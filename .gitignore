@@ -1,2 +1,3 @@
 .vagrant
 *.vdi
+packer/output-centos-7.7
