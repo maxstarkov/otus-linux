@@ -97,3 +97,72 @@ touch /.autorelabel
   VG       #PV #LV #SN Attr   VSize   VFree
   OtusRoot   1   2   0 wz--n- <38.97g    0
 ```
+
+## Добавить модуль в initrd
+
+Для добавления своего модуля в initrd нужно создать подкаталог в каталоге `/usr/lib/dracut/modules.d/`:
+
+```
+[root@lvm ~]# mkdir /usr/lib/dracut/modules.d/01otus-test
+[root@lvm ~]# cd /usr/lib/dracut/modules.d/01otus-test
+```
+
+В каталоге создаем два файла `module-setup.sh` и `otus-test.sh`:
+
+```
+[root@lvm 01otus-test]# cat module-setup.sh
+
+#!/bin/bash
+
+check() {
+    return 0
+}
+
+depends() {
+    return 0
+}
+
+install() {
+    inst_hook cleanup 00 "${moddir}/otus-test.sh"
+}
+
+[root@lvm 01otus-test]# cat otus-test.sh
+
+#!/bin/bash
+
+exec 0<>/dev/console 1<>/dev/console 2<>/dev/console
+cat <<'msgend'
+Hello! You are in Otus-test dracut module!
+ _____________________________
+< I'm Otus-test dracut module >
+ -----------------------------
+   \
+    \
+        .--.
+       |o_o |
+       |:_/ |
+      //   \ \
+     (|     | )
+    /'\_   _/`\
+    \___)=(___/
+msgend
+sleep 10
+echo " continuing...."
+```
+
+Пересобираем initrd командой:
+
+```
+[root@lvm ~]# dracut -f -v
+```
+
+Проверяем, что модуль в initrd:
+
+```
+[root@lvm ~]# lsinitrd -m /boot/initramfs-3.10.0-862.2.3.el7.x86_64.img | grep otus-test
+otus-test
+```
+
+Удалим параметр загрузки `quiet`, либо через редактирование файла `/etc/default/grub`, либо в момент загрузки.
+
+В итоге при загрузке будет выведена картинка из модуля и сделана пауза на 10 секунд.
