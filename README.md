@@ -49,4 +49,51 @@ echo "SuperStrongPassword" | passwd --stdin vagrant
 touch /.autorelabel
 ```
 
+# Способ 3
 
+Загружаемся аналогично способу 1 и переходим к редактированию параметров загрузки.
+В этом способе сразу указываем в параметрах `init=/sysroot/bin/sh` и заменяем `ro` на `rw`.
+Файловая система будет сразу смонтирована в режиме read-write.
+Дальнейшие действия по смене пароля аналогичны.
+
+В предыдущих примерах тоже можно заменить `ro` на `rw` и получить доступ на чтение-запись.
+
+## Переименовать VG
+
+Сначала узнаем какие volume group есть в системе выполнив команду `vgs`:
+
+```
+[root@lvm ~]# vgs
+  VG         #PV #LV #SN Attr   VSize   VFree
+  VolGroup00   1   2   0 wz--n- <38.97g    0
+```
+
+Переименуем нужную нам VG (VolGroup00) в OtusRoot.
+Для этого выполним команду `vgrename VolGroup00 OtusRoot`:
+
+```
+[root@lvm ~]# vgrename VolGroup00 OtusRoot
+  Volume group "VolGroup00" successfully renamed to "OtusRoot"
+```
+
+Исправим имя VG в файлах `/etc/fstab, /etc/default/grub, /boot/grub2/grub2.cfg`:
+
+```
+[root@lvm ~]# vi /etc/fstab
+[root@lvm ~]# vi /etc/default/grub
+[root@lvm ~]# vi /boot/grub2/grub.cfg
+```
+
+Создадим initrd для нового названия VG:
+
+```
+[root@lvm ~]# mkinitrd -f -v /boot/initramfs-$(uname -r).img $(uname -r)
+```
+
+Перезагружаемся и проверяем имя VG:
+
+```
+[root@lvm ~]# vgs
+  VG       #PV #LV #SN Attr   VSize   VFree
+  OtusRoot   1   2   0 wz--n- <38.97g    0
+```
