@@ -1,0 +1,7 @@
+[Unit]
+Description=Example watchlog service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/sysconfig/watchlog
+ExecStart=/opt/watchlog.sh $SEARCH_WORD $SEARCH_LOG

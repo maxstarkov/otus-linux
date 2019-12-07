@@ -1,0 +1,10 @@
+[Unit]
+Description=Run watchlog script every 10 second
+
+[Timer]
+OnActiveSec=10
+OnUnitActiveSec=10
+Unit=watchlog.service
+
+[Install]
+WantedBy=multi-user.target

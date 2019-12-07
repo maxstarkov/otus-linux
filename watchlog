@@ -1,0 +1,5 @@
+# Configuration file for watchlog service
+
+# File and word in that file that we will be search
+SEARCH_WORD="ALERT"
+SEARCH_LOG=/var/log/watchlog.log

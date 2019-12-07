@@ -69,6 +69,8 @@ Vagrant.configure("2") do |config|
 	      yum install -y mdadm smartmontools hdparm gdisk
   	  SHELL
 
+	  box.vm.provision "shell", path: "systemd_watchlog.sh"
+
       end
   end
 end
