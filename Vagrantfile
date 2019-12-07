@@ -70,6 +70,7 @@ Vagrant.configure("2") do |config|
   	  SHELL
 
 	  box.vm.provision "shell", path: "systemd_watchlog.sh"
+	  box.vm.provision "shell", path: "systemd_spawn_fcgi.sh"
 
       end
   end

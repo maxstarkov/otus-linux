@@ -49,3 +49,34 @@ Dec  7 14:05:46 otuslinux systemd: Starting Example watchlog service...
 Dec  7 14:05:46 otuslinux root: Sat Dec  7 14:05:46 UTC 2019: Found word: ALERT in log file: /var/log/watchlog.log
 Dec  7 14:05:46 otuslinux systemd: Started Example watchlog service.
 ```
+
+### Задание 2
+
+Конфигурация модуля сервиса расположена в файле `spawn-fcgi.service`.
+
+Скрипт установки модуля и его активации расположен в файле `systemd_spawn_fcgi.sh`.
+
+Запуск скрипта добавлен в provision Vagrant-файла.
+
+Для проверки задания нужно запустить ВМ как в предыдущем задании и выполнить команду:
+
+```
+[vagrant@otuslinux ~]$ systemctl status spawn-fcgi.service
+? spawn-fcgi.service - Spawn-fcgi startup service by Otus
+   Loaded: loaded (/etc/systemd/system/spawn-fcgi.service; disabled; vendor preset: disabled)
+   Active: active (running) since Sat 2019-12-07 15:11:00 UTC; 20s ago
+ Main PID: 6571 (php-cgi)
+   CGroup: /system.slice/spawn-fcgi.service
+           +-6571 /usr/bin/php-cgi
+           +-6574 /usr/bin/php-cgi
+           +-6575 /usr/bin/php-cgi
+           +-6576 /usr/bin/php-cgi
+           +-6577 /usr/bin/php-cgi
+           +-6578 /usr/bin/php-cgi
+           +-6579 /usr/bin/php-cgi
+           +-6580 /usr/bin/php-cgi
+           +-6581 /usr/bin/php-cgi
+           +-6582 /usr/bin/php-cgi
+           +-6583 /usr/bin/php-cgi
+           +-6584 /usr/bin/php-cgi
+```
