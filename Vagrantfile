@@ -71,6 +71,7 @@ Vagrant.configure("2") do |config|
 
 	  box.vm.provision "shell", path: "systemd_watchlog.sh"
 	  box.vm.provision "shell", path: "systemd_spawn_fcgi.sh"
+	  box.vm.provision "shell", path: "systemd_httpd_template.sh"
 
       end
   end
