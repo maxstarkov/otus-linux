@@ -3,6 +3,8 @@
 settings=/opt/watchlog/settings
 lockfile=/opt/watchlog/lockfile
 
+PROGNAME=$(basename $0)
+
 parse_logfile() {
 
 	grep -Po '.*".+?"\s+\d+' $2 \
@@ -59,7 +61,43 @@ run() {
 
 }
 
+usage() {
+
+	echo "$PROGNAME: usage: $PROGNAME topIP topURL logfile
+	- topIP: number of IP to output to the report,
+	- topURL: number of URL to output to the report,
+	- logfile: path to the log file for processing."
+
+}
+
+check_param() {
+
+        if [[ $# -ne 3 ]]
+        then
+                usage >&2
+                exit 1
+        elif [[ $1 -le 0 ]]
+        then
+                echo "number of IP to output to the report must be greater than zero"
+                usage >&2
+                exit 2
+        elif [[ $2 -le 0 ]]
+        then
+                echo "number of URL to output to the report must be greater than zero"
+                usage >&2
+                exit 2
+        elif [[ ! -e $3 ]]
+        then
+                echo "log file must be exist"
+                usage >&2
+                exit 3
+        fi
+
+}
+
 main() {
+
+	check_param $1 $2 $3
 
 	if ( set -o noclobber; echo "$$" > "$lockfile") 2>/dev/null;
 	then
