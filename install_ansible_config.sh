@@ -1,0 +1,1 @@
+cp -r /vagrant/ansible.cfg /vagrant/playbooks/ /vagrant/roles/ /vagrant/staging/ /vagrant/templates/ .
