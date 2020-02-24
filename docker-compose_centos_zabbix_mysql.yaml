@@ -1,0 +1,143 @@
+version: '3.5'
+services:
+ zabbix-server:
+  image: zabbix/zabbix-server-mysql:centos-4.4-latest
+  ports:
+   - "10051:10051"
+  volumes:
+   - /etc/localtime:/etc/localtime:ro
+   - /etc/timezone:/etc/timezone:ro 
+  links:
+   - mysql-server:mysql-server
+  ulimits:
+   nproc: 65535
+   nofile:
+    soft: 20000
+    hard: 40000
+  env_file:
+   - .env_db_mysql
+   - .env_srv
+  secrets:
+   - MYSQL_USER
+   - MYSQL_PASSWORD
+   - MYSQL_ROOT_PASSWORD
+  user: root
+  depends_on:
+   - mysql-server
+  networks:
+   zbx_net_backend:
+     aliases:
+      - zabbix-server
+      - zabbix-server-mysql
+      - zabbix-server-centos-mysql
+      - zabbix-server-mysql-centos
+   zbx_net_frontend:
+  stop_grace_period: 30s
+  sysctls:
+   - net.ipv4.ip_local_port_range=1024 65000
+   - net.ipv4.conf.all.accept_redirects=0
+   - net.ipv4.conf.all.secure_redirects=0
+   - net.ipv4.conf.all.send_redirects=0
+  labels:
+   com.zabbix.description: "Zabbix server with MySQL database support"
+   com.zabbix.company: "Zabbix LLC"
+   com.zabbix.component: "zabbix-server"
+   com.zabbix.dbtype: "mysql"
+   com.zabbix.os: "centos"
+
+ zabbix-web-apache-mysql:
+  image: zabbix/zabbix-web-apache-mysql:centos-4.4-latest
+  ports:
+   - "80:80"
+  links:
+   - mysql-server:mysql-server
+   - zabbix-server:zabbix-server
+  volumes:
+   - /etc/localtime:/etc/localtime:ro
+   - /etc/timezone:/etc/timezone:ro
+  env_file:
+   - .env_db_mysql
+   - .env_web
+  secrets:
+   - MYSQL_USER
+   - MYSQL_PASSWORD
+  user: root
+  depends_on:
+   - mysql-server
+   - zabbix-server
+  healthcheck:
+   test: ["CMD", "curl", "-f", "http://localhost"]
+   interval: 10s
+   timeout: 5s
+   retries: 3
+   start_period: 30s
+  networks:
+   zbx_net_backend:
+    aliases:
+     - zabbix-web-apache-mysql
+     - zabbix-web-apache-centos-mysql
+     - zabbix-web-apache-mysql-centos
+   zbx_net_frontend:
+  stop_grace_period: 10s
+  sysctls:
+   - net.core.somaxconn=65535
+  labels:
+   com.zabbix.description: "Zabbix frontend on Apache web-server with MySQL database support"
+   com.zabbix.company: "Zabbix LLC"
+   com.zabbix.component: "zabbix-frontend"
+   com.zabbix.webserver: "apache2"
+   com.zabbix.dbtype: "mysql"
+   com.zabbix.os: "centos"
+
+ mysql-server:
+  image: mysql:8.0
+  command: [mysqld, --character-set-server=utf8, --collation-server=utf8_bin, --default-authentication-plugin=mysql_native_password]
+  volumes:
+   - ./zbx_env/var/lib/mysql:/var/lib/mysql:rw
+  env_file:
+   - .env_db_mysql
+  secrets:
+   - MYSQL_USER
+   - MYSQL_PASSWORD
+   - MYSQL_ROOT_PASSWORD
+  user: root
+  stop_grace_period: 1m
+  networks:
+   zbx_net_backend:
+    aliases:
+     - mysql-server
+     - zabbix-database
+     - mysql-database
+   zbx_net_frontend:
+
+ db_data_mysql:
+  image: busybox
+  volumes:
+   - ./zbx_env/var/lib/mysql:/var/lib/mysql:rw
+
+networks:
+  zbx_net_frontend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.238.0/24
+  zbx_net_backend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    internal: true
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.16.239.0/24
+
+secrets:
+  MYSQL_USER:
+    file: ./.MYSQL_USER
+  MYSQL_PASSWORD:
+    file: ./.MYSQL_PASSWORD
+  MYSQL_ROOT_PASSWORD:
+    file: ./.MYSQL_ROOT_PASSWORD

@@ -1,75 +1,74 @@
 # -*- mode: ruby -*-
-# vim: set ft=ruby :
+# vi: set ft=ruby :
 
-MACHINES = {
-  :otuslinux => {
-        :box_name => "centos/7",
-        :ip_addr => '192.168.11.101',
-	:disks => {
-		:sata1 => {
-			:dfile => './sata1.vdi',
-			:size => 250,
-			:port => 1
-		},
-		:sata2 => {
-                        :dfile => './sata2.vdi',
-                        :size => 250, # Megabytes
-			:port => 2
-		},
-                :sata3 => {
-                        :dfile => './sata3.vdi',
-                        :size => 250,
-                        :port => 3
-                },
-                :sata4 => {
-                        :dfile => './sata4.vdi',
-                        :size => 250, # Megabytes
-                        :port => 4
-                }
-
-	}
-
-		
-  },
-}
+# vagrant plugin install vagrant-reload
 
 Vagrant.configure("2") do |config|
 
-  MACHINES.each do |boxname, boxconfig|
+        config.vm.define "zabbix" do |box|
+      
+                box.vm.box = "centos/7"
+      
+                box.vm.network "private_network", ip: "192.168.33.10"
+      
+                box.vm.provider "virtualbox" do |vb|
+                        vb.memory = "4096"
+                end
+        
+                box.vm.provision "shell", inline: <<-SHELL
+                        yum install -y git
+                        yum install -y yum-utils device-mapper-persistent-data lvm2
+                        yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                        yum install -y docker-ce docker-ce-cli containerd.io
+                        usermod -aG docker vagrant
+                        systemctl start docker
+                        curl -L "https://github.com/docker/compose/releases/download/1.25.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                        chmod +x /usr/local/bin/docker-compose
+                SHELL
 
-      config.vm.define boxname do |box|
+                box.vm.provision :reload
 
-          box.vm.box = boxconfig[:box_name]
-          box.vm.host_name = boxname.to_s
-
-          #box.vm.network "forwarded_port", guest: 3260, host: 3260+offset
-
-          box.vm.network "private_network", ip: boxconfig[:ip_addr]
-
-          box.vm.provider :virtualbox do |vb|
-            	  vb.customize ["modifyvm", :id, "--memory", "1024"]
-                  needsController = false
-		  boxconfig[:disks].each do |dname, dconf|
-			  unless File.exist?(dconf[:dfile])
-				vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
-                                needsController =  true
-                          end
-
-		  end
-                  if needsController == true
-                     vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
-                     boxconfig[:disks].each do |dname, dconf|
-                         vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
-                     end
-                  end
-          end
- 	  box.vm.provision "shell", inline: <<-SHELL
-	      mkdir -p ~root/.ssh
-              cp ~vagrant/.ssh/auth* ~root/.ssh
-	      yum install -y mdadm smartmontools hdparm gdisk
-  	  SHELL
-
+                box.vm.provision "shell", privileged: false, inline: <<-SHELL
+                        git clone https://github.com/zabbix/zabbix-docker.git
+                        cp /vagrant/docker-compose_centos_zabbix_mysql.yaml zabbix-docker/
+                        sudo systemctl start docker
+                        while [[ $(systemctl is-active docker) == "inactive" ]]; do sleep 10 ;done
+                        docker-compose -f ./zabbix-docker/docker-compose_centos_zabbix_mysql.yaml up -d
+                SHELL
+      
+        end
+      
+        config.vm.define "simple-host" do |box|
+      
+                box.vm.box = "centos/7"
+      
+                box.vm.network "private_network", ip: "192.168.33.11"
+      
+                box.vm.provider "virtualbox" do |vb|
+                        vb.memory = "512"
+                        vb.cpus = "1"
+                end
+        
+                box.vm.provision "shell", inline: <<-SHELL
+                        yum install -y epel-release
+                        yum install -y python-pip
+                        pip install py-zabbix
+                        rpm -Uvh https://repo.zabbix.com/zabbix/4.4/rhel/7/x86_64/zabbix-release-4.4-1.el7.noarch.rpm
+                        yum install -y zabbix-agent
+                        sed -i 's/Server=127.0.0.1/Server=192.168.33.10/' /etc/zabbix/zabbix_agentd.conf
+                        sed -i 's/ServerActive=127.0.0.1/ServerActive=192.168.33.10/' /etc/zabbix/zabbix_agentd.conf
+                        systemctl start zabbix-agent
+                SHELL
+        
+                box.vm.provision "shell", privileged: false, inline: <<-SHELL
+                        cp /vagrant/add_host_to_zabbix.py .
+                        python add_host_to_zabbix.py
+                        cp /vagrant/cpu_load.sh .
+                        chmod +x cpu_load.sh
+                        (crontab -l 2>/dev/null; echo "*/1 * * * * /home/vagrant/cpu_load.sh") | crontab -
+                SHELL
+      
+        end
+      
       end
-  end
-end
-
+      
