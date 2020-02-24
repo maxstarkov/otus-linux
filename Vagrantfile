@@ -1,9 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# vagrant plugin install vagrant-reload
-
 Vagrant.configure("2") do |config|
+
+        config.vagrant.plugins = "vagrant-reload"
 
         config.vm.define "zabbix" do |box|
       
