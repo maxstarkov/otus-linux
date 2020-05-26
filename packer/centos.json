@@ -1,9 +1,8 @@
 {
-  "variables":{
+  "variables": {
     "artifact_description": "CentOS 7.7 with kernel 5.x",
     "image_name": "centos-7.7"
   },
-
   "builders": [
     {
       "name": "{{user `image_name`}}",
@@ -15,7 +14,6 @@
       "type": "vagrant"
     }
   ],
-
   "provisioners": [
     {
       "type": "shell",
@@ -28,9 +26,10 @@
         "{{user `image_name`}}": {
           "scripts": [
             "scripts/stage-1-kernel-update.sh",
-	    "scripts/stage-2-clean.sh"
+            "scripts/stage-1-2-vbguest-update.sh",
+            "scripts/stage-2-clean.sh"
           ]
-	}
+        }
       }
     }
   ]
