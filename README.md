@@ -1,8 +1,9 @@
-# Инструкции
+## Решение задания
 
-* [Как начать Git](git_quick_start.md)
-* [Как начать Vagrant](vagrant_quick_start.md)
+Для проверки задания нужно запустить ВМ:
 
-## otus-linux
+```
+vagrant up
+```
 
-Используйте этот [Vagrantfile](Vagrantfile) - для тестового стенда.
+При запуске ВМ будут созданы
