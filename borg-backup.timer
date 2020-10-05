@@ -1,0 +1,12 @@
+[Unit]
+Description=Runs borg-backup every 5 minute
+
+[Timer]
+# Run after booting one minute
+OnBootSec=1min
+# Run every one hour or one munite
+OnUnitActiveSec=5min
+Unit=borg-backup.service
+
+[Install]
+WantedBy=multi-user.target

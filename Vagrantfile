@@ -1,75 +1,111 @@
 # -*- mode: ruby -*-
 # vim: set ft=ruby :
 
-MACHINES = {
-  :otuslinux => {
-        :box_name => "centos/7",
-        :ip_addr => '192.168.11.101',
-	:disks => {
-		:sata1 => {
-			:dfile => './sata1.vdi',
-			:size => 250,
-			:port => 1
-		},
-		:sata2 => {
-                        :dfile => './sata2.vdi',
-                        :size => 250, # Megabytes
-			:port => 2
-		},
-                :sata3 => {
-                        :dfile => './sata3.vdi',
-                        :size => 250,
-                        :port => 3
-                },
-                :sata4 => {
-                        :dfile => './sata4.vdi',
-                        :size => 250, # Megabytes
-                        :port => 4
-                }
+MY_HD_DIR = "D:\\VM\\hd"
 
-	}
+hd_dir = if File.directory?(MY_HD_DIR) then MY_HD_DIR else "." end
 
-		
-  },
+disks_for_backup = {
+        :sata1 => {
+                :dfile => hd_dir + '/backup_volume.vdi',
+                :size => 2048,
+                :port => 1
+        }
 }
 
 Vagrant.configure("2") do |config|
 
-  MACHINES.each do |boxname, boxconfig|
+        config.vbguest.auto_update = false
 
-      config.vm.define boxname do |box|
+        config.vm.define "backup_server" do |box|
 
-          box.vm.box = boxconfig[:box_name]
-          box.vm.host_name = boxname.to_s
+                box.vm.box = "centos/7"
+                box.vm.host_name = "backupserver"
 
-          #box.vm.network "forwarded_port", guest: 3260, host: 3260+offset
+                box.vm.network "private_network", ip: '192.168.11.101'
 
-          box.vm.network "private_network", ip: boxconfig[:ip_addr]
+                box.vm.provider :virtualbox do |vb|
+                        
+                        vb.customize ["modifyvm", :id, "--memory", "1024"]
+                        
+                        needsController = false
 
-          box.vm.provider :virtualbox do |vb|
-            	  vb.customize ["modifyvm", :id, "--memory", "1024"]
-                  needsController = false
-		  boxconfig[:disks].each do |dname, dconf|
-			  unless File.exist?(dconf[:dfile])
-				vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
-                                needsController =  true
-                          end
+                        disks_for_backup.each do |dname, dconf|
+                                unless File.exist?(dconf[:dfile])
+                                        vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
+                                        needsController =  true
+                                end
+                        end
 
-		  end
-                  if needsController == true
-                     vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
-                     boxconfig[:disks].each do |dname, dconf|
-                         vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
-                     end
-                  end
-          end
- 	  box.vm.provision "shell", inline: <<-SHELL
-	      mkdir -p ~root/.ssh
-              cp ~vagrant/.ssh/auth* ~root/.ssh
-	      yum install -y mdadm smartmontools hdparm gdisk
-  	  SHELL
+                        if needsController == true
+                        
+                                vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
+                        
+                                disks_for_backup.each do |dname, dconf|
+                                        vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
+                                end
+                        end
+                end
 
-      end
-  end
+                box.vm.provision "shell", inline: <<-SHELL
+                        mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+                SHELL
+
+                box.vm.provision "shell", inline: <<-SHELL
+                yum install -y epel-release
+                yum install -y borgbackup
+                mkfs.xfs /dev/sdb
+                mkdir /var/backup
+                cp /vagrant/var-backup.mount /etc/systemd/system
+                systemctl daemon-reload
+                systemctl enable var-backup.mount
+                systemctl start var-backup.mount
+                chown vagrant:vagrant /var/backup
+                SHELL
+                
+        end
+
+        config.vm.define "backup_client" do |box|
+
+                box.vm.box = "centos/7"
+                box.vm.host_name = "backupclient"
+
+                box.vm.network "private_network", ip: '192.168.11.102'
+
+                box.vm.provider :virtualbox do |vb|
+                        vb.customize ["modifyvm", :id, "--memory", "1024"]
+                end
+
+                box.vm.provision "shell", inline: <<-SHELL
+                        mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+                SHELL
+
+                box.vm.provision "file", source: ".vagrant/machines/backup_server/virtualbox/private_key", destination: "/home/vagrant/backup_server.key"
+
+                box.vm.provision "shell", inline: <<-SHELL
+                mv ~vagrant/backup_server.key ~root/.ssh/id_rsa
+                cp ~root/.ssh/id_rsa ~vagrant/.ssh/id_rsa
+                chown vagrant:vagrant ~vagrant/.ssh/id_rsa
+                chmod 400 ~vagrant/.ssh/id_rsa
+                chown root /root/.ssh/id_rsa
+                chmod 400 /root/.ssh/id_rsa
+                SHELL
+
+                box.vm.provision "shell", inline: <<-SHELL
+                yum install -y epel-release
+                yum install -y borgbackup
+                export BORG_PASSPHRASE='123'
+                export BORG_RSH='ssh -o StrictHostKeyChecking=no'
+                borg init --encryption=repokey ssh://vagrant@192.168.11.101/var/backup
+                cp /vagrant/borg_backup.sh /root/borg_backup.sh
+                chmod 0700 /root/borg_backup.sh
+                cp /vagrant/borg-backup.service /etc/systemd/system
+                cp /vagrant/borg-backup.timer /etc/systemd/system
+                systemctl daemon-reload
+                systemctl enable borg-backup.timer
+                systemctl start borg-backup.timer 
+                SHELL
+
+        end
+
 end
-

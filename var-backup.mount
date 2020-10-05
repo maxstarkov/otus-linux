@@ -1,0 +1,11 @@
+[Unit]
+Description=Mount backup volume sdb
+
+[Mount]
+What=/dev/sdb
+Where=/var/backup
+Type=xfs
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target
