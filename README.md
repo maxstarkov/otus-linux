@@ -26,7 +26,7 @@ vagrant up backup_client
 - Установлен пакет `borgbackup` из репозитория `epel-release`.
 - Инициализирован репозиторий для хранения архивов на ВМ `backup_server`.
 - Установлен скрипт [borg_backup.sh](./borg_backup.sh) для автоматического создания резервных копий.
-- Установлен timer-unit для автоматического запуска скрипта бекапа: [borg-backup.service](./org-backup.service) [borg-backup.timer](./borg-backup.timer)
+- Установлен timer-unit для автоматического запуска скрипта бекапа: [borg-backup.service](./borg-backup.service) [borg-backup.timer](./borg-backup.timer)
 
 После запуска ВМ `backup_client` автоматически начнут создаваться резервные копии каталога `/etc` каждые 5 минут.
 
