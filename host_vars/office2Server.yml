@@ -1,0 +1,13 @@
+forwarding: false
+
+ipv4:
+  dhcp:
+    - if: eth0
+  static:
+    - if: eth1
+      addr: 192.168.1.2
+      subnet: 25
+
+gateways:
+  - if: eth1
+    gateway: 192.168.1.1

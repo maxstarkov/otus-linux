@@ -1,0 +1,20 @@
+forwarding: true
+
+ipv4:
+  static:
+    - if: eth1
+      addr: 192.168.255.1
+      subnet: 30
+
+routes:
+  - if: eth1
+    route: 192.168.0.0/16 192.168.255.2
+    
+firewall:
+  zone: public
+  masquerade: true
+  rules:
+    - table: nat
+      chain: POSTROUTING
+      priority: 0
+      args: "! -d 192.168.0.0/16 -o eth0 -j MASQUERADE"

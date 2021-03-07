@@ -1,0 +1,10 @@
+[routers]
+inetRouter ansible_host=127.0.0.1 ansible_port=22220
+centralRouter ansible_host=127.0.0.1 ansible_port=22221
+office1Router ansible_host=127.0.0.1 ansible_port=22222
+office2Router ansible_host=127.0.0.1 ansible_port=22223
+
+[servers]
+centralServer ansible_host=127.0.0.1 ansible_port=22224
+office1Server ansible_host=127.0.0.1 ansible_port=22225
+office2Server ansible_host=127.0.0.1 ansible_port=22226

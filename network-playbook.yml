@@ -1,0 +1,130 @@
+- name: Playbook for debug and develop
+  hosts: all
+  become: True
+  tasks:
+
+  - name: Install traceroute
+    dnf:
+      name: traceroute
+      state: present
+
+  - name: Configure ipv4 forwarding
+    sysctl:
+      name: net.ipv4.conf.all.forwarding
+      value: '1'
+      state: present
+    when: forwarding
+
+  - name: Delete inactive nm connections
+    shell: >
+      nmcli --fields UUID,TIMESTAMP-REAL connection show |
+      grep never |
+      awk '{print $1}' |
+      xargs -r nmcli connection delete uuid
+    register: result
+    changed_when: result.stdout | length > 0
+    notify: Connection up
+
+  - name: Add nm connections
+    shell: >
+      nmcli connection show ethernet-{{ item.if }} &>/dev/null ||
+      nmcli connection add connection.interface-name {{ item.if }} type ethernet
+    register: result
+    changed_when: result.stdout | length > 0
+    when: ipv4.static is defined
+    with_items:
+      - '{{ ipv4.static }}'
+    notify: Connection up
+
+  - name: Configure ipv4
+    shell: >
+      if [[ $(nmcli -g ipv4.addresses connection show ethernet-{{ item.if }}) != "{{ item.addr }}/{{ item.subnet }}" ]]; then 
+        nmcli connection modify ethernet-{{ item.if }} ipv4.method manual ipv4.addresses {{ item.addr }}/{{ item.subnet }} &&
+        nmcli connection up ethernet-{{ item.if }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    when: ipv4.static is defined
+    with_items:
+      - '{{ ipv4.static }}'
+    notify: Connection up
+
+  - name: Delete default routes
+    shell: > 
+      if [[ $(nmcli -g ipv4.never-default connection show System\ eth0) != "yes" ]]; then
+        nmcli connection modify System\ eth0 ipv4.never-default yes && 
+        nmcli connection up System\ eth0;
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    when: ipv4.dhcp is defined
+    notify: Connection up
+
+  - name: Set gateways
+    shell: >
+      if [[ $(nmcli -g ipv4.gateway connection show ethernet-{{ item.if }}) != "{{ item.gateway }}" ]]; then
+        nmcli connection modify ethernet-{{ item.if }} ipv4.method manual ipv4.gateway {{ item.gateway }} && 
+        nmcli connection up ethernet-{{ item.if }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    when: gateways is defined
+    with_items:
+      - "{{ gateways }}"
+    notify: Connection up
+
+  - name: Set routes
+    shell: >
+      if [[ $(nmcli -g ipv4.routes connection show ethernet-{{ item.if }}) != "{{ item.route }}" ]]; then
+        nmcli connection modify ethernet-{{ item.if }} ipv4.method manual ipv4.routes "{{ item.route }}" && 
+        nmcli connection up ethernet-{{ item.if }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    when: routes is defined
+    with_items:
+      - "{{ routes }}"
+    notify: Connection up
+
+  - name: Start firewall
+    systemd:
+      name: firewalld
+      state: started
+      enabled: yes
+    when: firewall is defined
+
+  - name: Configure masquerading
+    shell: >
+      if [[ $(firewall-cmd --zone={{ firewall.zone }} --query-masquerade) == "no" ]]; then
+        firewall-cmd --zone={{ firewall.zone }} --add-masquerade --permanent;
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    when: firewall is defined and firewall.masquerade
+    notify: Reload firewall
+
+  - name: Configure firewall rules
+    shell: >
+      if [[ $(firewall-cmd --direct --query-rule ipv4 {{ item.table }} {{ item.chain }} {{ item.priority }} {{ item.args }}) == "no" ]]; then
+        firewall-cmd --permanent --direct --add-rule ipv4 {{ item.table }} {{ item.chain }} {{ item.priority }} {{ item.args }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    when: firewall is defined
+    with_items:
+      - '{{ firewall.rules }}'
+    notify: Reload firewall
+
+  handlers:
+
+    - name: Connection up
+      shell: >
+        for d in $(nmcli --terse --fields DEVICE connection show); do 
+          nmcli connection up ifname $d; 
+        done
+
+    - name: Reload firewall
+      shell: firewall-cmd --reload
+      when: firewall is defined
+      with_items:
+        - '{{ firewall }}'
