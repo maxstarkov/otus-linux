@@ -1,0 +1,145 @@
+- name: Configure PXE server
+  hosts: all
+  become: true
+  tasks:
+
+  - name: Install packages
+    dnf:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - epel-release
+      - dhcp-server
+      - tftp-server
+      - nfs-utils
+      - syslinux-tftpboot
+      - nginx
+
+  - name: Start nginx
+    systemd:
+      name: nginx
+      state: started
+      enabled: yes
+
+  - name: Start tftp
+    systemd:
+      name: tftp.socket
+      state: started
+      enabled: yes
+
+  - name: Start firewall
+    systemd:
+      name: firewalld
+      state: started
+      enabled: yes
+
+  - name: Enable firewall services
+    shell: >
+      if [[ $(firewall-cmd --query-service={{ item }}) == "no" ]]; then
+        firewall-cmd --permanent --add-service={{ item }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    loop:
+      - tftp
+      - http
+    notify: Reload firewall
+
+  - name: Configure dhcpd.conf
+    template:
+      src: dhcpd.conf
+      dest: /etc/dhcp/dhcpd.conf
+    notify: Restart dhcp
+
+  - name: Create http repo directories
+    file:
+      path: '{{ item.mount.where }}'
+      state: directory
+    when: distr is defined
+    with_items:
+      - '{{ distr }}'
+
+  - name: Create systemd mount unit
+    template:
+      src: systemd_mount.j2
+      dest: /etc/systemd/system/{{ item.mount.where[1:] | replace("/", "-") }}.mount
+    when: distr is defined
+    with_items:
+      - '{{ distr }}'
+    
+  - name: Enable systemd mount
+    systemd:
+      name: '{{ item.mount.where[1:] | replace("/", "-") }}.mount'
+      state: started
+      daemon_reload: yes
+      enabled: yes
+    when: distr is defined
+    with_items:
+      - '{{ distr }}'
+
+  - name: Create pxelinux directories
+    file:
+      path: /var/lib/tftpboot/pxelinux/{{ item }}
+      state: directory
+    loop:
+      - "pxelinux.cfg"
+      - "images"
+
+  - name: Copy pxelinux files
+    copy:
+      src: /tftpboot/{{ item }}
+      dest: /var/lib/tftpboot/pxelinux/{{ item }}
+      remote_src: true
+    loop:
+      - "pxelinux.0"
+      - "libutil.c32"
+      - "menu.c32"
+      - "libmenu.c32"
+      - "ldlinux.c32"
+      - "vesamenu.c32"
+      - "chain.c32"
+      - "libcom32.c32"
+    notify: Restart tftp
+
+  - name: Create images directories
+    file:
+      path: /var/lib/tftpboot/pxelinux/images/{{ item.name }}
+      state: directory
+    when: distr is defined
+    with_items:
+      - '{{ distr }}'
+
+  - name: Copy kernel and initrd files
+    copy:
+      src: "{{ item.1.mount.where }}/images/pxeboot/{{ item.0 }}"
+      dest: /var/lib/tftpboot/pxelinux/images/{{ item.1.name }}
+      remote_src: true
+    when: distr is defined
+    with_nested:
+      - ['initrd.img', 'vmlinuz']
+      - '{{ distr }}'
+
+  - name: Configure pxe menu
+    template:
+      src: default_menu.j2
+      dest: /var/lib/tftpboot/pxelinux/pxelinux.cfg/default
+    notify: Restart tftp
+
+  handlers:
+
+    - name: Reload firewall
+      shell: firewall-cmd --reload
+
+    - name: Restart dhcp
+      systemd:
+        name: dhcpd
+        state: restarted
+        daemon_reload: yes
+        enabled: yes
+
+    - name: Restart tftp
+      systemd:
+        name: tftp.service
+        state: restarted
+        daemon_reload: yes
+        enabled: yes

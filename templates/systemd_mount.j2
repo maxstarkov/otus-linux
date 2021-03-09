@@ -1,0 +1,12 @@
+[Unit]
+Description=mount {{ item.mount.descr }}
+After=network.target multi-user.target
+
+[Mount]
+What={{ item.mount.what }}
+Where={{ item.mount.where }}
+Type={{ item.mount.type }}
+Options={{ item.mount.options }}
+
+[Install]
+WantedBy=default.target

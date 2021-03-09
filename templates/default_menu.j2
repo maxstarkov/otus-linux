@@ -1,0 +1,25 @@
+DEFAULT menu
+PROMPT 0
+TIMEOUT 600
+
+MENU TITLE Demo PXE setup
+
+{% for distr in hostvars[inventory_hostname].distr %}
+
+LABEL install {{ distr.name }}
+  MENU LABEL ^Install {{ distr.name }}
+  MENU DEFAULT
+  KERNEL images/{{ distr.name }}/vmlinuz
+  APPEND initrd=images/{{ distr.name }}/initrd.img ip=dhcp inst.repo=http://{{ hostvars[inventory_hostname].ip }}/repo/{{ distr.name }}
+
+LABEL rescue
+  MENU LABEL ^Rescue mode {{ distr.name }}
+  KERNEL images/{{ distr.name }}/vmlinuz
+  APPEND initrd=images/{{ distr.name }}/initrd.img rescue
+
+{% endfor %}
+
+LABEL local
+  MENU LABEL ^Local boot
+  KERNEL chain.c32
+  APPEND hd0

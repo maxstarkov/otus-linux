@@ -1,0 +1,16 @@
+ip: 192.168.0.254
+dhcp:
+  subnet: 192.168.0.0
+  netmask: 255.255.255.0
+  range_min: 192.168.0.10 
+  range_max: 192.168.0.20
+  next_server: 192.168.0.254
+
+distr:
+  - name: centos
+    mount:
+      descr: "centos iso"
+      what: "/dev/sr0"
+      where: "/usr/share/nginx/html/repo/centos"
+      type: "iso9660"
+      options: "ro"
