@@ -1,0 +1,100 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+
+  - name: install packages
+    dnf:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - bind
+      - bind-utils
+      - chrony
+
+  - name: copy transferkey to all servers and the client
+    copy: src=named.zonetransfer.key dest=/etc/named.zonetransfer.key owner=root group=named mode=0644
+
+  - name: setup dns servers
+    shell: >
+      if [[ $(nmcli -g ipv4.dns connection show System\ {{ item }}) != "{{ dns.servers | join(',') }}" ]]; then 
+        nmcli connection modify System\ {{ item }} ipv4.dns "{{ dns.servers | join(',') }}" &&
+        nmcli connection up System\ {{ item }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    loop:
+      - eth1
+
+  - name: setup dns auto dns
+    shell: >
+      if [[ $(nmcli -g ipv4.ignore-auto-dns connection show System\ {{ item }}) != "yes" ]]; then 
+        nmcli connection modify System\ {{ item }} ipv4.ignore-auto-dns yes &&
+        nmcli connection up System\ {{ item }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    loop:
+      - eth1
+
+  - name: setup dns search (domain)
+    shell: >
+      if [[ $(nmcli -g ipv4.dns-search connection show System\ {{ item }}) != {{ dns.domain }} ]]; then 
+        nmcli connection modify System\ {{ item }} ipv4.dns-search {{ dns.domain }} &&
+        nmcli connection up System\ {{ item }};
+      fi
+    register: result
+    changed_when: result.stdout | length > 0
+    loop:
+      - eth1
+
+- hosts: ns01
+  become: yes
+  tasks:
+
+  - name: copy named.conf
+    copy: src=master-named.conf dest=/etc/named.conf owner=root group=named mode=0640
+  
+  - name: copy zones
+    copy: src={{ item }} dest=/var/named/ owner=root group=named mode=0660
+    with_fileglob:
+      - named.d*
+  
+  - name: set /etc/named permissions
+    file: path=/etc/named owner=root group=named mode=0670
+
+  - name: ensure named is running and enabled
+    service: name=named state=restarted enabled=yes
+
+- hosts: ns02
+  become: yes
+  tasks:
+
+  - name: copy named.conf
+    copy: src=slave-named.conf dest=/etc/named.conf owner=root group=named mode=0640
+  
+  - name: set /etc/named permissions
+    file: path=/etc/named owner=root group=named mode=0670
+
+  - name: ensure named is running and enabled
+    service: name=named state=restarted enabled=yes
+
+- hosts: client1
+  become: yes
+  tasks:
+
+  - name: copy rndc conf file
+    copy: src=rndc.conf dest=/home/vagrant/rndc.conf owner=vagrant group=vagrant mode=0644
+  
+  - name: copy motd to the client
+    copy: src=client-motd dest=/etc/motd owner=root group=root mode=0644
+
+- hosts: client2
+  become: yes
+  tasks:
+
+  - name: copy rndc conf file
+    copy: src=rndc.conf dest=/home/vagrant/rndc.conf owner=vagrant group=vagrant mode=0644
+  
+  - name: copy motd to the client
+    copy: src=client-motd dest=/etc/motd owner=root group=root mode=0644
