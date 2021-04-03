@@ -1,8 +1,4 @@
-# Инструкции
+# Administrator Linux (OTUS)
 
-* [Как начать Git](git_quick_start.md)
-* [Как начать Vagrant](vagrant_quick_start.md)
-
-## otus-linux
-
-Используйте этот [Vagrantfile](Vagrantfile) - для тестового стенда.
+Репозиторий курса OTUS Administrator Linux.
+Решения заданий в отдельных ветках. 
