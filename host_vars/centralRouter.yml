@@ -1,0 +1,40 @@
+forwarding: true
+
+ipv4:
+  dhcp:
+    - if: eth0
+  static:
+    - if: eth2
+      addr: 192.168.0.1
+      subnet: 28
+    - if: eth3
+      addr: 192.168.0.33
+      subnet: 28
+    - if: eth4
+      addr: 192.168.0.65
+      subnet: 26
+    - if: eth5
+      addr: 192.168.255.5
+      subnet: 30
+    - if: eth6
+      addr: 192.168.255.9
+      subnet: 30
+  bonds:
+    - if: bond0
+      addr: 192.168.255.2
+      subnet: 30
+  bond_ifs:
+    - if: eth1
+      master: bond0
+    - if: eth7
+      master: bond0
+    
+routes:
+  - if: eth5
+    route: 192.168.2.0/24 192.168.255.6
+  - if: eth6
+    route: 192.168.1.0/24 192.168.255.10
+
+gateways:
+  - if: bond0
+    gateway: 192.168.255.1

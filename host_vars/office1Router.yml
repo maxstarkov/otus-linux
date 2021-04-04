@@ -1,0 +1,36 @@
+forwarding: true
+
+ipv4:
+  dhcp:
+    - if: eth0
+  static:
+    - if: eth1
+      addr: 192.168.255.6
+      subnet: 30
+    - if: eth2
+      addr: 192.168.2.1
+      subnet: 26
+    - if: eth3
+      addr: 192.168.2.65
+      subnet: 26
+    - if: eth4
+      addr: 192.168.2.129
+      subnet: 26
+    - if: eth5
+      addr: 192.168.2.193
+      subnet: 26
+  vlans:
+    - if: eth6.100
+      id: 100
+      parent: eth6
+      addr: 10.10.10.2
+      subnet: 24
+    - if: eth6.101
+      id: 101
+      parent: eth6
+      addr: 10.10.10.2
+      subnet: 24
+
+gateways:
+  - if: eth1
+    gateway: 192.168.255.5

@@ -1,0 +1,11 @@
+forwarding: false
+
+ipv4:
+  dhcp:
+    - if: eth0
+  vlans:
+    - if: eth1.101
+      id: 101
+      parent: eth1
+      addr: 10.10.10.1
+      subnet: 24
