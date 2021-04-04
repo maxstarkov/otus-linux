@@ -56,7 +56,7 @@ Slave queue ID: 0
 ```
 
 Видим, что текущее активное соединение на интерфейсе `eth1`.
-На ВМ `centralRouter` выолним команду:
+На ВМ `centralRouter` выполним команду:
 
 ```
 [root@centralRouter ~]# ping 192.168.255.1
@@ -138,7 +138,7 @@ Slave queue ID: 0
 [root@testServer1 ~]# tcpdump -i eth1 icmp -e
 ```
 
-В выводе tcpdump на ВМ `testServer1` увидим, что пакеты дейсвтительно тегированы номером vlan 100:
+В выводе tcpdump на ВМ `testServer1` увидим, что пакеты тегированы номером vlan 100:
 
 ```
 [root@testServer1 ~]# tcpdump -i eth1 icmp -e
