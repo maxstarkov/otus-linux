@@ -1,3 +1,5 @@
 .vagrant
 *.vdi
+*.log
+*.iso
 packer/output-centos-7.7
