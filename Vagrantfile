@@ -10,6 +10,8 @@ MACHINES = {
 
 Vagrant.configure("2") do |config|
 
+	config.vbguest.auto_update = false
+
 	MACHINES.each do |boxname, boxconfig|
 
       		config.vm.define boxname do |box|
@@ -31,6 +33,8 @@ Vagrant.configure("2") do |config|
 			
 		box.vm.provision "shell", path: "create_rpm_package.sh"
 		box.vm.provision "shell", path: "create_rpm_repo.sh"
+
+		box.vm.synced_folder ".", "/vagrant", disabled: true
 
 		end
 	end
