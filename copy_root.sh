@@ -1,3 +1,6 @@
+# Установка необходимых пакетов.
+yum install -y mdadm smartmontools hdparm gdisk xfsdump
+
 # Подготовка временного корневого раздела.
 
 # Создаем physical volume

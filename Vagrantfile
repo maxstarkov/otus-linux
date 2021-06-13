@@ -1,7 +1,11 @@
 # -*- mode: ruby -*-
 # vim: set ft=ruby :
 
-MY_HD_DIR = "D:\\VM\\hd"
+if Vagrant::Util::Platform.windows?
+        MY_HD_DIR = "D:\\VM\\hd"
+else
+        MY_HD_DIR = "/mnt/vbvm/hd"
+end
 
 hd_dir = if File.directory?(MY_HD_DIR) then MY_HD_DIR else "." end
 
@@ -29,6 +33,8 @@ disk_for_lvm = {
 }
 
 Vagrant.configure("2") do |config|
+
+        config.vbguest.auto_update = false
 
         config.vm.box_version = "1804.02"
 
@@ -73,7 +79,9 @@ Vagrant.configure("2") do |config|
                 box.vm.provision "restore_root", run: "never", type: "shell", path: "restore_root.sh"
                 box.vm.provision "move_var_dir", run: "never", type: "shell", path: "move_var_dir.sh"
                 box.vm.provision "move_home_dir", run: "never", type: "shell", path: "move_home_dir.sh"
-                box.vm.provision "remove_temp_vg", run: "never", type: "shell", path: "remove_temp_vg.sh" 
+                box.vm.provision "remove_temp_vg", run: "never", type: "shell", path: "remove_temp_vg.sh"
+                
+                box.vm.synced_folder ".", "/vagrant", disabled: true
                 
         end
 end
