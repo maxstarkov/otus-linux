@@ -2,6 +2,8 @@
 # vim: set ft=ruby :
 
 Vagrant.configure("2") do |config|
+
+        config.vbguest.auto_update = false
         
         config.vm.define "nfs_server" do |box|
 
