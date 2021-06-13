@@ -7,7 +7,45 @@ vagrant up otuslinux
 ```
 
 Будет создана ВМ с пятью дополнительными дисками.
-После создания ВМ выполнится [provision скрипт](./create_raid5.sh), который создаст raid5 из пяти дисков и создаст на нем пять одинаковых GPT партиций.
+После создания ВМ выполнится [provision скрипт](./create_raid5.sh), который создаст raid5 из пяти дисков и создаст на нем пять одинаковых GPT партиций:
+
+```
+mdadm -D /dev/md0
+/dev/md0:
+           Version : 1.2
+     Creation Time : Sun Jun 13 08:02:28 2021
+        Raid Level : raid5
+        Array Size : 1015808 (992.00 MiB 1040.19 MB)
+     Used Dev Size : 253952 (248.00 MiB 260.05 MB)
+      Raid Devices : 5
+     Total Devices : 5
+       Persistence : Superblock is persistent
+
+       Update Time : Sun Jun 13 08:02:33 2021
+             State : clean 
+    Active Devices : 5
+   Working Devices : 5
+    Failed Devices : 0
+     Spare Devices : 0
+
+            Layout : left-symmetric
+        Chunk Size : 512K
+
+Consistency Policy : resync
+
+              Name : centos-7-raid:0  (local to host centos-7-raid)
+              UUID : fb6910d0:cb70f297:1c3bbd5d:0e37adaa
+            Events : 20
+
+    Number   Major   Minor   RaidDevice State
+       0       8       16        0      active sync   /dev/sdb
+       1       8       32        1      active sync   /dev/sdc
+       2       8       48        2      active sync   /dev/sdd
+       3       8       64        3      active sync   /dev/sde
+       5       8       80        4      active sync   /dev/sdf
+```
+
+На этом raid массиве можно проводить эксперименты.
 
 ### Решение задания с повышенной сложностью
 
