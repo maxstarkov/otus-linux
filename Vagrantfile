@@ -1,7 +1,11 @@
 # -*- mode: ruby -*-
 # vim: set ft=ruby :
 
-MY_HD_DIR = "D:\\VM\\hd"
+if Vagrant::Util::Platform.windows?
+        MY_HD_DIR = "D:\\VM\\hd"
+else
+        MY_HD_DIR = "/mnt/vbvm/hd"
+end
 
 hd_dir = if File.directory?(MY_HD_DIR) then MY_HD_DIR else "." end
 
@@ -29,6 +33,8 @@ disks_for_zfs = {
 }
 
 Vagrant.configure("2") do |config|
+
+        config.vbguest.auto_update = false
 
         config.vm.define "otuslinux" do |box|
 
@@ -71,6 +77,10 @@ Vagrant.configure("2") do |config|
                 yum install -y zfs
                 /sbin/modprobe zfs
                 SHELL
+
+                box.vm.provision "file", source: "gdrive.sh", destination: "gdrive.sh"
+
+                box.vm.synced_folder ".", "/vagrant", disabled: true
                 
         end
 

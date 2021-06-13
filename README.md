@@ -65,7 +65,7 @@ zfs list -r -o compressratio,name storage/compressed | grep compressed/ | sort -
 С помощью скрипта [gdrive.sh](./gdrive.sh) скачаем файл с импортированой файловой системой:
 
 ```
- bash gdrive.sh 1KRBNW33QWqbvbVHa3hLJivOAt60yukkg zfs_task1.tar.gz
+bash /home/vagrant/gdrive.sh 1KRBNW33QWqbvbVHa3hLJivOAt60yukkg zfs_task1.tar.gz
 ```
 
 Распакуем архив:
@@ -93,7 +93,7 @@ zpool import -d zpoolexport/
 Pool `otus` можно импортировать, сделаем это командой:
 
 ```
-zpool import -d zpoolexport otus storage
+zpool import -d zpoolexport otus storage1
 zpool list
 NAME      SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
 storage   480M  2.09M   478M        -         -     0%     0%  1.00x    ONLINE  -
@@ -113,13 +113,13 @@ storage/hometask2  filesystem       zle  1.88M   350M     128K     sha256
 С помощью скрипта [gdrive.sh](./gdrive.sh) cкачаем файл снимка:
 
 ```
-bash gdrive.sh 1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG otus_task2.file
+bash /home/vagrant/gdrive.sh 1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG otus_task2.file
 ```
 
 Создадим zpool с именем `otus`:
 
 ```
-zpool create otus sdb
+zpool create otus sdd
 ```
 
 Восстановим снимок:
